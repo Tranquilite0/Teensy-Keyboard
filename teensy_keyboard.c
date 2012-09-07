@@ -32,14 +32,22 @@
 /* pressed   keeps track of which keys that are pressed 
    release   keeps track of which keys that may be released
    queue     contains the keys that are sent in the HID packet 
-   mod_keys  is the bit pattern corresponding to pressed modifier keys */
+   mod_keys  is the bit pattern corresponding to pressed modifier keys*/
 uint8_t pressed[NKEY];
 volatile uint8_t release[NKEY];
 uint8_t queue[7] = {255,255,255,255,255,255,255};
 uint8_t mod_keys = 0;
 
-extern const uint8_t is_modifier[];
-extern const uint8_t layout[];
+extern const uint8_t fun_sw;
+extern const uint8_t layer_sw[];
+extern const uint16_t layout0[];
+extern const uint16_t layout1[];
+extern const uint16_t layout2[];
+extern const uint16_t layout3[];
+extern const uint16_t layout4[];
+extern const uint16_t layout5[];
+extern const uint16_t layout6[];
+extern uint16_t *const layout_ar[];
 extern uint8_t *const row_ddr[];
 extern uint8_t *const row_port[];
 extern uint8_t *const row_pin[];
@@ -47,17 +55,20 @@ extern const uint8_t row_bit[];
 extern uint8_t *const col_ddr[];
 extern uint8_t *const col_port[];
 extern const uint8_t col_bit[];
+uint16_t *layout = layout0; // Pointer to the current layout
+extern volatile uint8_t keyboard_leds;
 
 void init(void);
 void send(void);
 void poll(void);
-void key_press(uint8_t key);
-void key_release(uint8_t key);
+void key_press(uint16_t key);
+void key_release(uint16_t key);
 /* void update_leds(void); */
 /* void setup_leds(void); */
 void setup_io_pins(void);
 /* void setup_bounce_timer(void); */
 /* void toggle_leds(void); */
+void select_layer(void);
 
 /* Check for keys ready to be released, and 
    advance the release counter on all keys. */
@@ -107,22 +118,41 @@ int main(void) {
   }
 }
 
-void send(void) {
-  //return;
+/*void send(void) { // For hold-down function key
   uint8_t i;
+  if(pressed[fun_sw]) {
+    layout = layout1;
+  }
+  else
+    layout = layout0;
   for(i=0; i<6; i++)
-    keyboard_keys[i] = queue[i]<255? layout[queue[i]]: 0;
+     keyboard_keys[i] = queue[i]<255? layout[queue[i]]: 0;
+  keyboard_modifier_keys = mod_keys;
+  usb_keyboard_send();
+}*/
+
+void send(void) { // For combination function key
+  if (pressed[fun_sw])
+  {
+      select_layer();
+	  return; // This lets us select a function layer without sending keystrokes
+  }
+  uint8_t i;
+     for(i=0; i<6; i++)
+       keyboard_keys[i] = queue[i]<255? layout[queue[i]]: 0;
   keyboard_modifier_keys = mod_keys;
   usb_keyboard_send();
 }
 
 /* */
-void key_press(uint8_t key) {
+void key_press(uint16_t key) {
   uint8_t i;
   pressed[key] = true;
   release[key] = 0x00;
-  if(is_modifier[key])
-    mod_keys |= layout[key];
+  /*if(is_modifier[key])
+    mod_keys |= layout[key];*/
+  if((layout[key] & 0x0100) == 0x0100)
+	mod_keys |= (layout[key] & 0x00FF);
   else {
     for(i = 5; i > 0; i--) queue[i] = queue[i-1];
     queue[0] = key;
@@ -131,12 +161,14 @@ void key_press(uint8_t key) {
 }
 
 /* */
-void key_release(uint8_t key) {
+void key_release(uint16_t key) {
   uint8_t i;
   pressed[key] = false;
   release[key] = 0x00;
-  if(is_modifier[key])
-    mod_keys &= ~layout[key];
+  /*if(is_modifier[key])
+    mod_keys &= ~layout[key];*/
+  if((layout[key] & 0x0100) == 0x0100)
+	mod_keys &= ~(layout[key] & 0x00FF);
   else {
     for(i = 0; i < 6; i++) 
       if(queue[i]==key)
@@ -178,3 +210,8 @@ void setup_io_pins(void) {
   }
 }
 
+void select_layer(void) {
+    for (uint8_t i = 0; i < NFUN; i++){
+		if (pressed[layer_sw[i] ] ) layout = layout_ar[i];
+	} 
+}

@@ -28,13 +28,13 @@
 #----------------------------------------------------------------------------
 
 # Keyboard type (with micro controller code and speed)
-# BOARD = phantom
-# MCU = atmega32u4
-# F_CPU = 16000000
-
-BOARD = iso
-MCU = at90usb1286
+BOARD = phantom
+MCU = atmega32u4
 F_CPU = 16000000
+
+# BOARD = iso
+# MCU = at90usb1286
+# F_CPU = 16000000
 
 # BOARD = symmetric
 # MCU = at90usb1286
