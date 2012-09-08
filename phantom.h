@@ -27,7 +27,7 @@ void toggle_leds(void);
 /* Specify which type of function layer implementation.
  0 = Hold-down function key
  1 = Combination function key */
-#define FUNCTION_TYPE 0
+#define FUNCTION_TYPE 1
 
 #define INTERRUPT_FUNCTION TIMER0_COMPA_vect
 
