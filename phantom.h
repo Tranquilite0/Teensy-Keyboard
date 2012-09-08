@@ -24,6 +24,11 @@ void toggle_leds(void);
 #define CAPS  6
 #define NUM   7
 
+/* Specify which type of function layer implementation.
+ 0 = Hold-down function key
+ 1 = Combination function key */
+#define FUNCTION_TYPE 0
+
 #define INTERRUPT_FUNCTION TIMER0_COMPA_vect
 
 //Switch Values specific to Phantom PCB layout
