@@ -281,7 +281,9 @@ extern volatile uint8_t keyboard_leds;
 #define KEY_RIGHTALT            230
 #define KEY_RIGHTGUI            231
 
-#define KEY_RESERVED4         232-65535
+#define KEY_RESERVED4           232-65535
+//Teensy only reset switch. Not sure if this is the best way to handle it.
+#define KEY_TEENSY_RESET        65535
 
 // Everything below this point is only intended for usb_serial.c
 //#ifdef USB_SERIAL_PRIVATE_INCLUDE
