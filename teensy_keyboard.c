@@ -61,8 +61,8 @@ extern volatile uint8_t keyboard_leds;
 void init(void);
 void send(void);
 void poll(void);
-void key_press(uint16_t key);
-void key_release(uint16_t key);
+void key_press(uint8_t key);
+void key_release(uint8_t key);
 /* void update_leds(void); */
 /* void setup_leds(void); */
 void setup_io_pins(void);
@@ -70,6 +70,8 @@ void setup_io_pins(void);
 /* void toggle_leds(void); */
 void select_layer(void);
 void teensy_reset(void);
+uint8_t layout_value(uint8_t);
+uint8_t layout_type(uint8_t);
 
 /* Check for keys ready to be released, and 
    advance the release counter on all keys. */
@@ -119,11 +121,13 @@ int main(void) {
   }
 }
 
-#if FUNCTION_TYPE == 0
-void send(void) { // For hold-down function key
+#if FUNCTION_TYPE == 0 // Hold-down function key
+void send(void) {
   uint8_t i;
   if(pressed[fun_sw]) {
     layout = layout1;
+	/*if (!(keyboard_leds & 0b00000001)) // Forces numlock on when you try to type with function key held down.
+      usb_keyboard_press(KEY_NUM_LOCK, mod_keys);*/
   }
   else
     layout = layout0;
@@ -132,8 +136,8 @@ void send(void) { // For hold-down function key
   keyboard_modifier_keys = mod_keys;
   usb_keyboard_send();
 }
-#elif FUNCTION_TYPE == 1
-void send(void) { // For combination function key
+#elif FUNCTION_TYPE == 1 // Combination function key
+void send(void) {
   if (pressed[fun_sw])
   {
       select_layer();
@@ -149,17 +153,21 @@ void send(void) { // For combination function key
 #error Improper choice setting for FUNCTION_TYPE set!
 #endif
 /* */
-void key_press(uint16_t key) {
+void key_press(uint8_t key) {
   uint8_t i;
   pressed[key] = true;
   release[key] = 0x00;
-  /*if(is_modifier[key])
-    mod_keys |= layout[key];*/
-  if (layout[key] == KEY_TEENSY_RESET)
+  if (layout[key] == KEY_TEENSY_RESET) //Teensy Reset
 	teensy_reset();
-  if((layout[key] & 0x0100) == 0x0100)
+  if((layout[key] & 0xFF00) == 0x0100) // Modifiers
 	mod_keys |= (layout[key] & 0x00FF);
-  else {
+  else if((layout[key] & 0x0400) == 0x0400) { // Locking lock keys
+    if(( (layout[key] == KEY_LOCK_NUM) && !(keyboard_leds & 0b00000001) ) ||
+	   ( (layout[key] == KEY_LOCK_CAPS) && !(keyboard_leds & 0b00000010) ) ||
+	   ( (layout[key] == KEY_LOCK_SCROLL) && !(keyboard_leds & 0b00000100) ) )
+	   usb_keyboard_press((layout[key] & 0x00FF), mod_keys);
+  }
+  else { // Regular keys
     for(i = 5; i > 0; i--) queue[i] = queue[i-1];
     queue[0] = key;
   }
@@ -167,15 +175,21 @@ void key_press(uint16_t key) {
 }
 
 /* */
-void key_release(uint16_t key) {
+void key_release(uint8_t key) {
   uint8_t i;
   pressed[key] = false;
   release[key] = 0x00;
   /*if(is_modifier[key])
     mod_keys &= ~layout[key];*/
-  if((layout[key] & 0x0100) == 0x0100)
+  if((layout[key] & 0x0100) == 0x0100) // Modifiers
 	mod_keys &= ~(layout[key] & 0x00FF);
-  else {
+  else if((layout[key] & 0x0400) == 0x0400) { // Locking lock keys
+    if(( (layout[key] == KEY_LOCK_NUM) && (keyboard_leds & 0b00000001) ) ||
+	   ( (layout[key] == KEY_LOCK_CAPS) && (keyboard_leds & 0b00000010) ) ||
+	   ( (layout[key] == KEY_LOCK_SCROLL) && (keyboard_leds & 0b00000100) ) )
+	   usb_keyboard_press((layout[key] & 0x00FF), mod_keys);
+  }
+  else { // Regular keys
     for(i = 0; i < 6; i++) 
       if(queue[i]==key)
 	break;
@@ -222,7 +236,7 @@ void select_layer(void) {
 	} 
 }
 
-/* Jump to teensy bootloader as if the reset switch was pressed */
+/* Jump to teensy bootloader as if the reset switch was pressed. */
 void teensy_reset(void) {
 cli();
 // disable watchdog, if enabled
@@ -256,4 +270,22 @@ _delay_ms(5);
     PORTA = 0; PORTB = 0; PORTC = 0; PORTD = 0; PORTE = 0; PORTF = 0;
     asm volatile("jmp 0x1FC00");
 #endif 
+}
+
+//These functions arent used as of yet. They are more experimentation than anything else.
+uint8_t layout_value(uint8_t index){ //Just make sure that there are never more than 128 keys!
+	//create new layout pointer, type cast it to 8 bit pointer
+	uint8_t *layout_val = (uint8_t*) layout;
+	//index now needs to be twice as big plus one
+	index *= 2;
+	index++;
+	return layout_val[index];
+}
+
+uint8_t layout_type(uint8_t index){ // Just make sure that there are never more than 128 keys!
+	//create new layout pointer, type cast it to 8 bit pointer
+	uint8_t *layout_val = (uint8_t*) layout;
+	//index now needs to be twice as big
+	index *= 2;
+	return layout_val[index];
 }

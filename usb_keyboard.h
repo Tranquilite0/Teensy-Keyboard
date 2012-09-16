@@ -18,6 +18,8 @@ extern volatile uint8_t keyboard_leds;
 #define usb_debug_putchar(c)
 #define usb_debug_flush_output()
 
+//Modifiers
+
 #define KEY_CTRL        0x0101
 #define KEY_SHIFT       0x0102
 #define KEY_ALT         0x0104
@@ -30,6 +32,14 @@ extern volatile uint8_t keyboard_leds;
 #define KEY_RIGHT_SHIFT 0x0120
 #define KEY_RIGHT_ALT   0x0140
 #define KEY_RIGHT_GUI   0x0180
+
+//Media keys will have first byte of 02
+//Mouse keys will have first byte of 03
+
+//Locking lock keys
+#define KEY_LOCK_CAPS   0x0439
+#define KEY_LOCK_NUM    0x0453
+#define KEY_LOCK_SCROLL 0x0447
 
 #define KEY_RESERVED1    0-3
 
@@ -281,7 +291,6 @@ extern volatile uint8_t keyboard_leds;
 #define KEY_RIGHTALT            230
 #define KEY_RIGHTGUI            231
 
-#define KEY_RESERVED4           232-65535
 //Teensy only reset switch. Not sure if this is the best way to handle it.
 #define KEY_TEENSY_RESET        65535
 
