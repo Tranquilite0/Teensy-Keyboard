@@ -232,7 +232,11 @@ void setup_io_pins(void) {
 
 void select_layer(void) {
     for (uint8_t i = 0; i < NFUN; i++){
-		if (pressed[layer_sw[i] ] ) layout = layout_ar[i];
+		if (pressed[layer_sw[i] ] ){
+			layout = layout_ar[i];
+			usb_keyboard_press(0,0); // Clears keyboard presses and prevents
+                                     //  stuck keys when changing layers
+		}
 	} 
 }
 
